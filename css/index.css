@@ -1,0 +1,118 @@
+@font-face{
+    font-family: sans;
+    src: url(../fonts/static/OpenSans-Regular.ttf);
+}
+*{
+    font-family: sans;
+}
+.fc-toolbar-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #4A90E2;
+}
+.fc-daygrid-event {
+    background-color: #38bdf8;
+    border: 1px solid #0284c7;
+    color: white;
+}
+#suggestion-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+#vacationModal {
+    z-index: 50;
+}
+#suggestion-list li {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+#suggestion-list li:hover {
+    background-color: #f0f0f0;
+}
+.hidden {
+    display: none;
+  }
+  
+  #eventModal {
+    z-index: 50;
+  }
+  
+  #eventMap {
+    height: 300px;
+  }
+  #map {
+    height: 500px;
+    width: 100%;
+    border: 1px solid #ccc;
+}
+.hidden {
+    display: none !important;
+  }
+  
+  .transition-transform {
+    transition: transform 0.5s ease-in-out;
+  }
+  #calendar{
+    padding: 50px;
+  }
+  #botones {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Tres columnas */
+    gap: 1rem; /* Espacio entre botones */
+  }
+  .modal{
+    width: 42rem;
+    height: 750px;
+    overflow-y: scroll;
+  }
+  /* Ajustar el tamaño del texto y diseño en dispositivos pequeños */
+@media (max-width: 768px) {
+  #calendar {
+      font-size: 12px;
+  }
+
+  .fc-toolbar-title {
+      font-size: 16px;
+      text-align: center;
+  }
+
+  .fc-header-toolbar {
+      flex-wrap: wrap;
+  }
+
+  .fc-daygrid-event {
+      font-size: 10px;
+      padding: 2px;
+  }
+
+  .fc-scroller {
+      overflow-x: auto; /* Permitir scroll horizontal */
+  }
+  .modal{
+    overflow-y: scroll !important;
+  }
+
+}
+@media (max-width: 768px) {
+  .modal{
+    width: 24rem;
+  }
+
+}
+@media (max-height: 768px) {
+  .modal{
+    overflow-y: scroll !important;
+    height: 650px;
+  }
+}
+
+/* Centrar el calendario y ajustar márgenes */
+#calendar {
+  max-width: 100%;
+  margin: 0 auto;
+}

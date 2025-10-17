@@ -1,0 +1,28 @@
+.centrar{
+    text-align: center;
+}
+.descripcion-amplia th, .descripcion-amplia td {
+    max-width: 150px; /* Cambia según tus necesidades */
+    white-space: nowrap; /* Evita el salto de línea */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Muestra puntos suspensivos */
+    text-align: center;
+}
+tr{
+  background-color: #2E3440 !important;
+}
+.dt-length>select{
+  color : #2E3440 !important;
+}
+@media (max-width: 768px) {
+    .modal{
+      width: 24rem;
+    }
+  
+  }
+  @media (max-height: 768px) {
+    .modal{
+      overflow-y: scroll !important;
+      height: 650px;
+    }
+  }
