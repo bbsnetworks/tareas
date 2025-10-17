@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
             right: 'dayGridMonth,timeGridWeek,timeGridDay',
         },
         events: {
-            url: '../ordenes/php/eventos.php',
+            url: '../tareas/php/eventos.php',
             method: 'GET',
             failure: function (error) {
                 Swal.fire({
@@ -122,7 +122,7 @@ calendar.render();
             }
         }
     
-        fetch('../ordenes/php/terminado.php', {
+        fetch('../tareas/php/terminado.php', {
             method: 'POST',
             body: formData,
         })
@@ -202,7 +202,7 @@ calendar.render();
             lng,
         };
 
-        fetch('../ordenes/php/eventos.php', {
+        fetch('../tareas/php/eventos.php', {
             method: 'POST',
             body: JSON.stringify(newEvent),
             headers: {
@@ -379,7 +379,7 @@ calendar.render();
         }
     }
     function deleteEvent(eventId) {
-        fetch(`../ordenes/php/eventos.php?id=${eventId}`, {
+        fetch(`../tareas/php/eventos.php?id=${eventId}`, {
             method: 'DELETE',
         })
             .then((response) => response.json())
@@ -409,7 +409,7 @@ calendar.render();
         formData.append('id', id);
         formData.append('estado', estado);
     
-        fetch('../ordenes/php/proceso.php', {
+        fetch('../tareas/php/proceso.php', {
             method: 'POST',
             body: formData,
         })

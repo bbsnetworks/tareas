@@ -1,6 +1,6 @@
 <!-- sidebar.php -->
 <?php
-$base = '/ordenes'; // <-- CAMBIA esto al nombre real de tu carpeta en htdocs si es distinto
+$base = '/tareas'; // <-- CAMBIA esto al nombre real de tu carpeta en htdocs si es distinto
 ?>
 <!-- Botón abrir menú -->
   <button id="btn-sidebar" onclick="toggleSidebar()" class="fixed top-4 left-4 z-50 text-white bg-gray-800 p-2 rounded hover:bg-gray-700 cursor-pointer">
