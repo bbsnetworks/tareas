@@ -26,3 +26,43 @@ tr{
       height: 650px;
     }
   }
+
+  /* ===== DataTables Dark Pro ===== */
+.dataTables_wrapper { color: #e5e7eb; }
+
+.dataTables_filter input,
+.dataTables_length select {
+  background: #1f2937 !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  color: #fff !important;
+  border-radius: 10px !important;
+  padding: 8px 10px !important;
+  outline: none !important;
+}
+
+.dataTables_filter input:focus,
+.dataTables_length select:focus {
+  border-color: rgba(34,211,238,.6) !important;
+  box-shadow: 0 0 0 3px rgba(34,211,238,.15) !important;
+}
+
+.dataTables_info { color: rgba(229,231,235,.8) !important; }
+
+.dataTables_paginate .paginate_button {
+  background: #1f2937 !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  color: #e5e7eb !important;
+  border-radius: 10px !important;
+  margin: 0 3px !important;
+}
+
+.dataTables_paginate .paginate_button.current {
+  background: rgba(34,211,238,.18) !important;
+  border-color: rgba(34,211,238,.35) !important;
+  color: #67e8f9 !important;
+}
+
+.dataTables_paginate .paginate_button:hover {
+  background: rgba(255,255,255,.06) !important;
+  border-color: rgba(255,255,255,.18) !important;
+}

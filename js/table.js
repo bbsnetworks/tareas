@@ -1,3 +1,16 @@
+const CATEGORY_STYLES = {
+  Cobertura: { chip: "bg-blue-500/20 text-blue-300 ring-1 ring-blue-500/30" },
+  "Instalación": { chip: "bg-green-500/20 text-green-300 ring-1 ring-green-500/30" },
+  Reporte: { chip: "bg-orange-500/20 text-orange-300 ring-1 ring-orange-500/30" },
+  "Cambio de domicilio": { chip: "bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30" },
+  "Cancelación": { chip: "bg-red-500/20 text-red-300 ring-1 ring-red-500/30" },
+  Servicios: { chip: "bg-cyan-500/20 text-cyan-300 ring-1 ring-cyan-500/30" },
+  Camaras: { chip: "bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/30" },
+  Torniquetes: { chip: "bg-yellow-500/20 text-yellow-300 ring-1 ring-yellow-500/30" },
+  Otros: { chip: "bg-gray-500/20 text-gray-300 ring-1 ring-gray-500/30" },
+};
+
+
 date = moment().format("YYYY-MM");
 date = date.toString();
 document.getElementById("fecha").value = date;
@@ -85,6 +98,22 @@ function showEventModal(id) {
       if (data.success) {
           document.getElementById('idTitle').textContent = data.id;
           document.getElementById('eventTitle').innerHTML = `<span class="mb-2"><i class="bi bi-clipboard2-fill"></i> Titulo: ${data.titulo}</span>`;
+          const categoriaRaw = data.categoria || "Otros";
+const catStyle = CATEGORY_STYLES[categoriaRaw]?.chip || CATEGORY_STYLES["Otros"].chip;
+
+const elCat = document.getElementById("eventCategoria");
+if (elCat) {
+  elCat.innerHTML = `
+    <span class="flex items-center gap-2">
+      <i class="bi bi-tag-fill text-gray-300"></i>
+      <span class="text-gray-300">Categoría:</span>
+      <span class="px-2 py-1 rounded text-xs font-semibold ${catStyle}">
+        ${categoriaRaw}
+      </span>
+    </span>
+  `;
+}
+
           document.getElementById('eventAdress').innerHTML = `<a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank"><i class="bi bi-pin-map-fill"></i> ${data.ubicacion}</a>`;
           document.getElementById('eventDate').innerHTML = `<span class="text-blue-500"><i class="bi bi-clock"></i> Inicio: ${data.inicio}</span> <span class="text-red-500">${data.fin ? `<i class="bi bi-clock-fill"></i> Fin: ${data.fin}</span>` : ''}`;
           switch (data.estado){
@@ -148,6 +177,11 @@ function openEditModal(id) {
 
         document.getElementById('editId').value = eventData.id;
         document.getElementById('editTitle').value = eventData.title;
+        const editCategoria = document.getElementById("editCategoria");
+if (editCategoria) {
+  editCategoria.value = eventData.categoria || "Otros";
+}
+
         document.getElementById('editStart').value = eventData.start.replace(' ', 'T');
         document.getElementById('editEnd').value = eventData.end ? eventData.end.replace(' ', 'T') : '';
         document.getElementById('editLocation').value = eventData.location;
