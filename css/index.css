@@ -60,11 +60,6 @@
   #calendar{
     padding: 50px;
   }
-  #botones {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* Tres columnas */
-    gap: 1rem; /* Espacio entre botones */
-  }
   .modal{
     width: 42rem;
     height: 750px;

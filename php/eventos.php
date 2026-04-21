@@ -31,8 +31,13 @@ try {
             $events = [];
 
             // Obtener eventos
-            // (si quieres optimizar luego: SELECT columnas específicas)
-            $result = $conexion->query("SELECT * FROM eventos");
+            $result = $conexion->query("
+            SELECT 
+            e.*,
+            c.nombre AS cliente_nombre
+            FROM eventos e
+            LEFT JOIN clientes c ON e.cliente = c.idcliente
+            ");
             if (!$result) {
                 throw new Exception("Error al obtener los eventos: " . $conexion->error);
             }
@@ -40,16 +45,41 @@ try {
             while ($row = $result->fetch_assoc()) {
                 // Asignar color según el estado (visual)
                 switch ($row['estado']) {
-                    case 'creado':    $row['color'] = '#3B82F6'; break; // Azul
-                    case 'proceso':   $row['color'] = '#FACC15'; break; // Amarillo
-                    case 'terminado': $row['color'] = '#22C55E'; break; // Verde
-                    case 'cancelado': $row['color'] = '#EF4444'; break; // Rojo
-                    default:          $row['color'] = '#6B7280'; // Gris
+                    case 'creado':
+                        $row['color'] = '#3B82F6';
+                        break; // Azul
+                    case 'proceso':
+                        $row['color'] = '#FACC15';
+                        break; // Amarillo
+                    case 'terminado':
+                        $row['color'] = '#22C55E';
+                        break; // Verde
+                    case 'cancelado':
+                        $row['color'] = '#EF4444';
+                        break; // Rojo
+                    default:
+                        $row['color'] = '#6B7280';
+                        break; // Gris
+                }
+                if (!isset($row['cliente']) || $row['cliente'] === '') {
+                $row['cliente'] = null;
+                } else {
+                $row['cliente'] = (int)$row['cliente'];
                 }
 
-                // ✅ aseguramos que exista categoria en el JSON (por si algún registro viejo viene null)
-                if (!isset($row['categoria']) || $row['categoria'] === null) {
+                if (!isset($row['cliente_nombre']) || $row['cliente_nombre'] === '') {
+                $row['cliente_nombre'] = null;
+}
+                // Asegurar categoría en registros viejos
+                if (!isset($row['categoria']) || $row['categoria'] === null || $row['categoria'] === '') {
                     $row['categoria'] = 'Otros';
+                }
+
+                // Asegurar cliente como null si viene vacío
+                if (!isset($row['cliente']) || $row['cliente'] === '') {
+                    $row['cliente'] = null;
+                } else {
+                    $row['cliente'] = (int)$row['cliente'];
                 }
 
                 $row['tipo'] = 'evento';
@@ -70,12 +100,12 @@ try {
                     'title' => 'Vacaciones de ' . $row['nombre'],
                     'start' => $row['inicio'],
                     'end' => $row['fin'],
-                    'color' => '#F97316', // Naranja (Vacaciones)
+                    'color' => '#F97316',
                     'estado' => 'vacaciones',
                     'tipo' => 'vacaciones',
                     'nombre' => $row['nombre'],
-                    // ✅ para que el front pueda tratarlo igual
-                    'categoria' => 'Vacaciones'
+                    'categoria' => 'Vacaciones',
+                    'cliente' => null
                 ];
             }
 
@@ -92,31 +122,42 @@ try {
                 exit;
             }
 
-            // Sanitizar los datos
+            // Sanitizar datos
             $title = $conexion->real_escape_string($data['title']);
             $start = $conexion->real_escape_string($data['start']);
             $end = isset($data['end']) && $data['end'] !== '' ? $conexion->real_escape_string($data['end']) : null;
+            $color = '#38bdf8';
 
-            // color se guarda, pero en GET lo estás "pisando" por estado (está bien si así lo quieres)
-            $color = isset($data['color']) ? $conexion->real_escape_string($data['color']) : '#38bdf8';
-
-            $categoria = $conexion->real_escape_string($data['categoria']);
             if (!in_array($data['categoria'], $categoriasPermitidas, true)) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Categoría inválida']);
                 exit;
             }
+            $categoria = $conexion->real_escape_string($data['categoria']);
 
-            $location = isset($data['location']) ? $conexion->real_escape_string($data['location']) : null;
-            $lat = isset($data['lat']) ? $conexion->real_escape_string($data['lat']) : 0.0;
-            $lng = isset($data['lng']) ? $conexion->real_escape_string($data['lng']) : 0.0;
+            $location = isset($data['location']) && $data['location'] !== ''
+                ? $conexion->real_escape_string($data['location'])
+                : null;
 
-            // Construir consulta SQL
-            $sql = $end ?
-                "INSERT INTO eventos (title, start, end, color, location, lat, lng, estado, categoria)
-                 VALUES ('$title', '$start', '$end', '$color', '$location', '$lat', '$lng', 'creado', '$categoria')" :
-                "INSERT INTO eventos (title, start, color, location, lat, lng, estado, categoria)
-                 VALUES ('$title', '$start', '$color', '$location', '$lat', '$lng', 'creado', '$categoria')";
+            $lat = isset($data['lat']) && $data['lat'] !== '' ? $conexion->real_escape_string($data['lat']) : 0.0;
+            $lng = isset($data['lng']) && $data['lng'] !== '' ? $conexion->real_escape_string($data['lng']) : 0.0;
+
+            // Nuevo campo cliente (INT NULL)
+            $cliente = (isset($data['cliente']) && $data['cliente'] !== '' && $data['cliente'] !== null)
+                ? (int)$data['cliente']
+                : null;
+
+            $endValue = $end ? "'$end'" : "NULL";
+            $locationValue = $location !== null ? "'$location'" : "NULL";
+            $clienteValue = $cliente !== null ? $cliente : "NULL";
+
+            if ($end !== null) {
+                $sql = "INSERT INTO eventos (title, start, end, color, location, lat, lng, estado, categoria, cliente)
+                        VALUES ('$title', '$start', $endValue, '$color', $locationValue, '$lat', '$lng', 'creado', '$categoria', $clienteValue)";
+            } else {
+                $sql = "INSERT INTO eventos (title, start, color, location, lat, lng, estado, categoria, cliente)
+                        VALUES ('$title', '$start', '$color', $locationValue, '$lat', '$lng', 'creado', '$categoria', $clienteValue)";
+            }
 
             if (!$conexion->query($sql)) {
                 throw new Exception("Error al guardar el evento: " . $conexion->error);
@@ -133,7 +174,7 @@ try {
                 exit;
             }
 
-            $id = $conexion->real_escape_string($_GET['id']);
+            $id = (int)$_GET['id'];
             $sql = "DELETE FROM eventos WHERE id = $id";
 
             if (!$conexion->query($sql)) {
@@ -153,18 +194,26 @@ try {
                 exit;
             }
 
-            // Sanitizar los datos
-            $id = $conexion->real_escape_string($data['id']);
+            $id = (int)$data['id'];
             $title = $conexion->real_escape_string($data['title']);
             $start = $conexion->real_escape_string($data['start']);
             $end = isset($data['end']) && $data['end'] !== '' ? $conexion->real_escape_string($data['end']) : null;
-            $color = isset($data['color']) ? $conexion->real_escape_string($data['color']) : '#38bdf8';
-            $location = isset($data['location']) ? $conexion->real_escape_string($data['location']) : null;
-            $lat = isset($data['lat']) ? $conexion->real_escape_string($data['lat']) : 0.0;
-            $lng = isset($data['lng']) ? $conexion->real_escape_string($data['lng']) : 0.0;
+            $color = '#38bdf8';
+
+            $location = isset($data['location']) && $data['location'] !== ''
+                ? $conexion->real_escape_string($data['location'])
+                : null;
+
+            $lat = isset($data['lat']) && $data['lat'] !== '' ? $conexion->real_escape_string($data['lat']) : 0.0;
+            $lng = isset($data['lng']) && $data['lng'] !== '' ? $conexion->real_escape_string($data['lng']) : 0.0;
             $estado = isset($data['estado']) ? $conexion->real_escape_string($data['estado']) : 'creado';
 
-            // ✅ categoria opcional en update (si no viene, se conserva)
+            // Nuevo campo cliente (INT NULL)
+            $cliente = (isset($data['cliente']) && $data['cliente'] !== '' && $data['cliente'] !== null)
+                ? (int)$data['cliente']
+                : null;
+
+            // Categoría opcional en update
             $categoriaSql = "";
             if (isset($data['categoria']) && $data['categoria'] !== '') {
                 if (!in_array($data['categoria'], $categoriasPermitidas, true)) {
@@ -172,22 +221,25 @@ try {
                     echo json_encode(['error' => 'Categoría inválida']);
                     exit;
                 }
+
                 $categoria = $conexion->real_escape_string($data['categoria']);
                 $categoriaSql = ", categoria = '$categoria'";
             }
 
-            // Construir consulta SQL
             $endValue = $end ? "'$end'" : "NULL";
+            $locationValue = $location !== null ? "'$location'" : "NULL";
+            $clienteValue = $cliente !== null ? $cliente : "NULL";
 
             $sql = "UPDATE eventos SET
                         title = '$title',
                         start = '$start',
                         end = $endValue,
                         color = '$color',
-                        location = '$location',
+                        location = $locationValue,
                         lat = '$lat',
                         lng = '$lng',
-                        estado = '$estado'
+                        estado = '$estado',
+                        cliente = $clienteValue
                         $categoriaSql
                     WHERE id = $id";
 
@@ -202,6 +254,7 @@ try {
         default:
             http_response_code(405);
             echo json_encode(['error' => 'Método no permitido']);
+            break;
     }
 } catch (Exception $e) {
     http_response_code(500);

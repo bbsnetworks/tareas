@@ -38,7 +38,6 @@ const CATEGORY_STYLES = {
   },
 };
 
-
 document.addEventListener("DOMContentLoaded", function () {
   let modalEvent;
   const sliderContainer = document.getElementById("sliderContainer");
@@ -208,17 +207,128 @@ document.addEventListener("DOMContentLoaded", function () {
   }).addTo(formMap);
   const form = document.getElementById("eventForm");
 
+  const clienteSearch = document.getElementById("clienteSearch");
+  const clienteInput = document.getElementById("cliente");
+  const clienteResults = document.getElementById("clienteResults");
+
+  let clienteTimer = null;
+
+  function hideClienteResults() {
+    if (!clienteResults) return;
+    clienteResults.classList.add("hidden");
+    clienteResults.innerHTML = "";
+  }
+
+  function renderClienteResults(clientes) {
+    if (!clienteResults) return;
+
+    if (!clientes.length) {
+      clienteResults.innerHTML = `
+      <div class="px-4 py-3 text-sm text-slate-400">
+        No se encontraron clientes
+      </div>
+    `;
+      clienteResults.classList.remove("hidden");
+      return;
+    }
+
+    clienteResults.innerHTML = clientes
+      .map(
+        (cliente) => `
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 border-b border-slate-800 last:border-b-0 hover:bg-slate-800 transition"
+          data-id="${cliente.idcliente}"
+          data-nombre="${escapeHtml(cliente.nombre)}"
+        >
+          <div class="text-white font-semibold">${cliente.idcliente} - ${escapeHtml(cliente.nombre)}</div>
+        </button>
+      `,
+      )
+      .join("");
+
+    clienteResults.classList.remove("hidden");
+
+    clienteResults.querySelectorAll("button[data-id]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        const nombre = btn.getAttribute("data-nombre");
+
+        clienteInput.value = id; // Solo se guarda el ID
+        clienteSearch.value = `${id} - ${nombre}`; // Visible al usuario
+        hideClienteResults();
+      });
+    });
+  }
+
+  async function buscarClientes(q) {
+    try {
+      const response = await fetch(
+        `../tareas/php/buscar_clientes.php?q=${encodeURIComponent(q)}`,
+        {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        },
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.success) {
+        hideClienteResults();
+        return;
+      }
+
+      renderClienteResults(data.clientes || []);
+    } catch (error) {
+      console.error("Error buscando clientes:", error);
+      hideClienteResults();
+    }
+  }
+
+  if (clienteSearch && clienteInput && clienteResults) {
+    clienteSearch.addEventListener("input", () => {
+      const q = clienteSearch.value.trim();
+
+      // Si vuelve a escribir, se limpia el valor real
+      clienteInput.value = "";
+
+      clearTimeout(clienteTimer);
+
+      if (q.length < 2) {
+        hideClienteResults();
+        return;
+      }
+
+      clienteTimer = setTimeout(() => {
+        buscarClientes(q);
+      }, 250);
+    });
+
+    clienteSearch.addEventListener("focus", () => {
+      const q = clienteSearch.value.trim();
+      if (q.length >= 2 && clienteResults.innerHTML.trim() !== "") {
+        clienteResults.classList.remove("hidden");
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!clienteSearch.parentElement.contains(e.target)) {
+        hideClienteResults();
+      }
+    });
+  }
+
   form.addEventListener("submit", function (event) {
     event.preventDefault();
 
     const title = document.getElementById("title").value.trim();
     const start = document.getElementById("start").value;
     const end = document.getElementById("end").value || null;
-    const color = document.getElementById("color").value;
     const location = document.getElementById("here-autocomplete").value.trim();
     const lat = document.getElementById("lat").value;
     const lng = document.getElementById("lng").value;
     const categoria = document.getElementById("categoria").value;
+    const cliente = document.getElementById("cliente").value.trim();
 
     if (!title || !start || !categoria) {
       Swal.fire({
@@ -228,16 +338,28 @@ document.addEventListener("DOMContentLoaded", function () {
       });
       return;
     }
+    if (
+      clienteSearch &&
+      clienteSearch.value.trim() !== "" &&
+      !clienteInput.value.trim()
+    ) {
+      Swal.fire({
+        icon: "error",
+        title: "Cliente inválido",
+        text: "Selecciona un cliente válido de la lista.",
+      });
+      return;
+    }
 
     const newEvent = {
       title,
       start,
       end,
-      color,
       categoria,
       location,
       lat,
       lng,
+      cliente: cliente ? parseInt(cliente) : null,
     };
 
     fetch("../tareas/php/eventos.php", {
@@ -258,6 +380,14 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         calendar.refetchEvents();
         form.reset();
+        document.getElementById("here-autocomplete").value = "";
+        document.getElementById("lat").value = "";
+        document.getElementById("lng").value = "";
+        document.getElementById("cliente").value = "";
+        if (document.getElementById("clienteSearch")) {
+          document.getElementById("clienteSearch").value = "";
+        }
+        hideClienteResults();
         Swal.fire({
           icon: "success",
           title: "Evento agregado",
@@ -297,58 +427,126 @@ document.addEventListener("DOMContentLoaded", function () {
   const modal = document.getElementById("eventModal");
   const closeModal = document.getElementById("closeModal");
   const closeModalButton = document.getElementById("closeModalButton");
+  const eventModalOverlay = document.getElementById("eventModalOverlay");
 
   function showEventModal(event) {
     document.getElementById("idTitle").textContent = "ID : " + event.id;
+
     const categoria =
       event.extendedProps?.categoria || event.categoria || "Otros";
     const catStyle =
       CATEGORY_STYLES[categoria]?.chip || CATEGORY_STYLES["Otros"].chip;
 
+    const estadoRaw = event.extendedProps?.estado || event.estado || "creado";
+    const estadoClass = getEstadoBadgeClass(estadoRaw);
+
+    const clienteRaw = event.extendedProps?.cliente ?? event.cliente ?? null;
+    const cliente =
+      clienteRaw !== null && clienteRaw !== "" ? escapeHtml(clienteRaw) : null;
+
+    const clienteNombreRaw =
+      event.extendedProps?.cliente_nombre ?? event.cliente_nombre ?? null;
+
+    const clienteNombre =
+      clienteNombreRaw !== null && clienteNombreRaw !== ""
+        ? escapeHtml(clienteNombreRaw)
+        : null;
+
+    const ubicacionRaw = event.extendedProps?.location ?? event.location ?? "";
+    const ubicacion = ubicacionRaw
+      ? escapeHtml(ubicacionRaw)
+      : "Sin ubicación registrada";
+
+    const inicioTexto = formatDateTime(event.start);
+    const finTexto = event.end ? formatDateTime(event.end) : "No especificado";
+
     document.getElementById("eventTitle").innerHTML = `
-  <span class="mb-2">
-    <i class="bi bi-clipboard2-fill"></i> Titulo: ${event.title}
-  </span>
-  <span class="mb-2 flex items-center gap-2">
-    <i class="bi bi-tag-fill"></i> Categoría:
-    <span class="px-2 py-1 rounded text-xs font-semibold ${catStyle}">
-      ${categoria}
-    </span>
-  </span>
-`;
+    <div class="grid gap-4">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="min-w-0">
+          <div class="text-white text-xl font-extrabold flex items-center gap-2">
+            <i class="bi bi-clipboard2-fill text-cyan-300"></i>
+            <span class="break-words">${escapeHtml(event.title || "Sin título")}</span>
+          </div>
+          <div class="text-sm text-slate-300 mt-2">
+            Información general de la tarea seleccionada.
+          </div>
+        </div>
 
-    //document.getElementById('eventDate').innerHTML = `<span class="text-blue-500">Inicio: ${event.start.toLocaleString()}</span> <span class="text-red-500">${
-    //event.end ? ` Fin: ${event.end.toLocaleString()}</span>` : ''
-    //}`;
-    document.getElementById("eventDate").innerHTML =
-      `<span class="text-blue-500 mb-2"><i class="bi bi-clock"></i> Inicio: ${event.start.toLocaleString()}</span> <span class="text-red-500">${
-        event.end
-          ? `<i class="bi bi-clock-fill"></i> Fin: ${event.end.toLocaleString()}</span>`
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="px-3 py-1 rounded-lg text-xs font-semibold ${catStyle}">
+            ${escapeHtml(categoria)}
+          </span>
+          <span class="px-3 py-1 rounded-lg text-xs font-semibold ${estadoClass}">
+            ${escapeHtml(estadoRaw)}
+          </span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="rounded-xl border border-cyan-500/10 bg-slate-900/60 p-3">
+          <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">Inicio</div>
+          <div class="text-sm font-semibold text-cyan-300">
+            <i class="bi bi-clock mr-1"></i>${escapeHtml(inicioTexto)}
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-cyan-500/10 bg-slate-900/60 p-3">
+          <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">Fin</div>
+          <div class="text-sm font-semibold text-red-300">
+            <i class="bi bi-clock-fill mr-1"></i>${escapeHtml(finTexto)}
+          </div>
+        </div>
+      </div>
+
+      ${
+        cliente
+          ? `
+      <div class="rounded-xl border border-cyan-500/10 bg-slate-900/60 p-3">
+        <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">Cliente</div>
+        <div class="text-sm font-semibold text-white">
+          <i class="bi bi-person-vcard mr-1 text-cyan-300"></i>${cliente}
+        </div>
+        ${
+          clienteNombre
+            ? `<div class="text-sm text-slate-300 mt-1">
+                 <i class="bi bi-person mr-1 text-cyan-300"></i>${clienteNombre}
+               </div>`
+            : ""
+        }
+      </div>
+    `
           : ""
-      }`;
-    document.getElementById("eventAdress").innerHTML =
-      `<a href="https://www.google.com/maps/dir/?api=1&destination=${event.extendedProps.lat},${event.extendedProps.lng}" target="_blank"><i class="bi bi-pin-map-fill"></i> ${event.extendedProps.location}</a>`;
-    console.log("inicio:" + event.start + " y fin: " + event.end);
-    switch (event.extendedProps.estado) {
-      case "creado":
-        document.getElementById("eventStatus").innerHTML =
-          `Estado: <span class="text-green-500">${event.extendedProps.estado}</span>`;
-        break;
-      case "proceso":
-        document.getElementById("eventStatus").innerHTML =
-          `Estado: <span class="text-yellow-500">En ${event.extendedProps.estado}</span>`;
-        break;
-      case "terminado":
-        document.getElementById("eventStatus").innerHTML =
-          `Estado: <span class="text-red-500">${event.extendedProps.estado}</span>`;
-        break;
-      case "cancelado":
-        document.getElementById("eventStatus").innerHTML =
-          `Estado: <span class="text-red-500">${event.extendedProps.estado}</span>`;
-        break;
-    }
+      }
+    </div>
+  `;
 
-    const lat = event.extendedProps.lat || 20.12933; // Coordenadas predeterminadas
+    document.getElementById("eventDate").innerHTML = "";
+    document.getElementById("eventAdress").innerHTML = `
+    <div class="rounded-xl border border-cyan-500/10 bg-slate-900/60 p-3">
+      <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">Ubicación</div>
+      <a
+        href="https://www.google.com/maps/dir/?api=1&destination=${event.extendedProps.lat},${event.extendedProps.lng}"
+        target="_blank"
+        class="text-sm font-semibold text-cyan-300 hover:text-cyan-200 transition break-words"
+      >
+        <i class="bi bi-pin-map-fill mr-1"></i>${ubicacion}
+      </a>
+    </div>
+  `;
+
+    document.getElementById("eventStatus").innerHTML = `
+    <div class="rounded-xl border border-cyan-500/10 bg-slate-900/60 p-3">
+      <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">Estado actual</div>
+      <div>
+        <span class="inline-flex px-3 py-1 rounded-lg text-sm font-semibold ${estadoClass}">
+          ${escapeHtml(estadoRaw)}
+        </span>
+      </div>
+    </div>
+  `;
+
+    const lat = event.extendedProps.lat || 20.12933;
     const lng = event.extendedProps.lng || -101.17979;
 
     const eventMapContainer = document.getElementById("eventMap");
@@ -356,51 +554,154 @@ document.addEventListener("DOMContentLoaded", function () {
     const cancelar = document.getElementById("botonCancelar");
     botones.innerHTML = "";
     eventMapContainer.innerHTML = "";
-    //console.log(event.extendedProps.estado);
-    //console.log(event.id);
+
     switch (event.extendedProps.estado) {
       case "creado":
         botones.innerHTML = `
-                <button id="statusCreated" class="bg-gray-500 text-white px-4 py-2 rounded" disabled>Creado</button>
-                <button id="statusInProcess" class="bg-yellow-500 text-white px-4 py-2 rounded" onclick="proceso(${event.id}, 'proceso')">En Proceso</button>
-                <button id="statusCompleted" class="bg-gray-500 text-white px-4 py-2 rounded" disabled>Completado</button>
-              `;
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <button
+          id="statusCreated"
+          class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-slate-700 text-white"
+          disabled
+        >
+          Creado
+        </button>
+        <button
+          id="statusInProcess"
+          class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-yellow-500 text-white"
+          onclick="proceso(${event.id}, 'proceso')"
+        >
+          En Proceso
+        </button>
+        <button
+          id="statusCompleted"
+          class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-slate-700 text-white"
+          disabled
+        >
+          Completado
+        </button>
+      </div>
+    `;
         cancelar.innerHTML = `
-                <button id="statusCanceled" class="bg-red-500 text-white px-4 py-2 rounded w-36" onclick="confirmarCancelacion(${event.id})">Cancelar <i class="bi bi-x"></i></button>
-              `;
+      <button
+        id="statusCanceled"
+        class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-red-500 text-white"
+        onclick="confirmarCancelacion(${event.id})"
+      >
+        Cancelar <i class="bi bi-x ml-2"></i>
+      </button>
+    `;
         break;
 
       case "proceso":
         botones.innerHTML = `
-                <button id="statusCreated" class="bg-gray-500 text-white px-4 py-2 rounded" disabled>Creado</button>
-                <button id="statusInProcess" class="bg-gray-500 text-white px-4 py-2 rounded" disabled>En Proceso</button>
-                <button id="statusCompleted" class="bg-yellow-500 text-white px-4 py-2 rounded" onclick="showSlider()">Completado</button>
-              `;
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <button
+          id="statusCreated"
+          class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-slate-700 text-white"
+          disabled
+        >
+          Creado
+        </button>
+        <button
+          id="statusInProcess"
+          class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-slate-700 text-white"
+          disabled
+        >
+          En Proceso
+        </button>
+        <button
+          id="statusCompleted"
+          class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-yellow-500 text-white"
+          onclick="showSlider()"
+        >
+          Completado
+        </button>
+      </div>
+    `;
         cancelar.innerHTML = `
-                <button id="statusCanceled" class="bg-red-500 text-white px-4 py-2 rounded w-36" onclick="confirmarCancelacion(${event.id})">Cancelar <i class="bi bi-x"></i></button>
-              `;
+      <button
+        id="statusCanceled"
+        class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-red-500 text-white"
+        onclick="confirmarCancelacion(${event.id})"
+      >
+        Cancelar <i class="bi bi-x ml-2"></i>
+      </button>
+    `;
         break;
 
       case "terminado":
         botones.innerHTML = `
-                <button id="statusCreated" class="bg-gray-500 text-white px-4 py-2 rounded" disabled>Creado</button>
-                <button id="statusInProcess" class="bg-gray-500 text-white px-4 py-2 rounded" disabled>En Proceso</button>
-                <button id="statusCompleted" class="bg-gray-500 text-white px-4 py-2 rounded" disabled>Terminado</button>
-              `;
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <button
+          id="statusCreated"
+          class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-slate-700 text-white"
+          disabled
+        >
+          Creado
+        </button>
+        <button
+          id="statusInProcess"
+          class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-slate-700 text-white"
+          disabled
+        >
+          En Proceso
+        </button>
+        <button
+          id="statusCompleted"
+          class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-slate-700 text-white"
+          disabled
+        >
+          Terminado
+        </button>
+      </div>
+    `;
         cancelar.innerHTML = `
-                <button id="statusCanceled" class="bg-gray-500 text-white px-4 py-2 rounded w-36" disabled>Cancelar <i class="bi bi-x"></i></button>
-              `;
+      <button
+        id="statusCanceled"
+        class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-slate-700 text-white"
+        disabled
+      >
+        Cancelar <i class="bi bi-x ml-2"></i>
+      </button>
+    `;
         break;
 
       case "cancelado":
         botones.innerHTML = `
-                <button id="statusCreated" class="bg-gray-500 text-white px-4 py-2 rounded" disabled>Creado</button>
-                <button id="statusInProcess" class="bg-gray-500 text-white px-4 py-2 rounded" disabled>En Proceso</button>
-                <button id="statusCompleted" class="bg-gray-500 text-white px-4 py-2 rounded" disabled>Terminado</button>
-              `;
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <button
+          id="statusCreated"
+          class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-slate-700 text-white"
+          disabled
+        >
+          Creado
+        </button>
+        <button
+          id="statusInProcess"
+          class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-slate-700 text-white"
+          disabled
+        >
+          En Proceso
+        </button>
+        <button
+          id="statusCompleted"
+          class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-slate-700 text-white"
+          disabled
+        >
+          Terminado
+        </button>
+      </div>
+    `;
         cancelar.innerHTML = `
-                <button id="statusCanceled" class="bg-gray-500 text-white px-4 py-2 rounded w-36" disabled>Cancelar <i class="bi bi-x"></i></button>
-              `;
+      <button
+        id="statusCanceled"
+        class="w-full min-h-[56px] px-4 py-3 rounded-xl font-semibold flex items-center justify-center text-center leading-tight text-sm md:text-base bg-slate-700 text-white"
+        disabled
+      >
+        Cancelar <i class="bi bi-x ml-2"></i>
+      </button>
+    `;
         break;
     }
 
@@ -436,6 +737,7 @@ document.addEventListener("DOMContentLoaded", function () {
     modal.classList.add("hidden");
     if (eventMap) {
       eventMap.remove();
+      eventMap = null;
     }
   }
   function deleteEvent(eventId) {
@@ -506,25 +808,10 @@ document.addEventListener("DOMContentLoaded", function () {
   closeModal.addEventListener("click", closeModalHandler);
   closeModalButton.addEventListener("click", closeModalHandler);
 
-  document.getElementById("deleteEventButton").addEventListener("click", () => {
-    if (modalEvent) {
-      Swal.fire({
-        title: "¿Estás seguro?",
-        text: "Este evento será eliminado permanentemente.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33",
-        cancelButtonColor: "#3085d6",
-        confirmButtonText: "Sí, eliminar",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          deleteEvent(modalEvent.id);
-        }
-      });
-    } else {
-      console.error("No se ha seleccionado ningún evento para eliminar.");
-    }
-  });
+  if (eventModalOverlay) {
+    eventModalOverlay.addEventListener("click", closeModalHandler);
+  }
+
   // ===============================
   // Modal "Tareas del día" (FAB)
   // ===============================
@@ -552,6 +839,34 @@ document.addEventListener("DOMContentLoaded", function () {
   function fmtTime(d) {
     if (!(d instanceof Date) || isNaN(d)) return "—";
     return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  }
+  function formatDateTime(value) {
+    if (!value) return "No especificado";
+    const d = value instanceof Date ? value : new Date(value);
+    if (isNaN(d)) return "No especificado";
+
+    return d.toLocaleString("es-MX", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  function getEstadoBadgeClass(estadoRaw) {
+    switch (estadoRaw) {
+      case "creado":
+        return "bg-green-600/20 text-green-300 ring-1 ring-green-600/30";
+      case "proceso":
+        return "bg-yellow-600/20 text-yellow-300 ring-1 ring-yellow-600/30";
+      case "terminado":
+        return "bg-red-600/20 text-red-300 ring-1 ring-red-600/30";
+      case "cancelado":
+        return "bg-gray-600/30 text-gray-200 ring-1 ring-gray-600/30";
+      default:
+        return "bg-gray-700 text-gray-200";
+    }
   }
 
   function renderDayTasksLoading() {
@@ -606,67 +921,89 @@ document.addEventListener("DOMContentLoaded", function () {
     return out;
   }
 
-function renderDayTasksList(events) {
-  const q = (dayTasksSearch.value || "").trim().toLowerCase();
+  function renderDayTasksList(events) {
+    const q = (dayTasksSearch.value || "").trim().toLowerCase();
 
-  const filtered = events.filter((ev) => {
-    const title = (ev.title ?? "").toLowerCase();
+    const filtered = events.filter((ev) => {
+      const title = (ev.title ?? "").toLowerCase();
 
-    const locRaw = ev.extendedProps?.location ?? ev.location ?? "";
-    const loc = String(locRaw).toLowerCase();
+      const locRaw = ev.extendedProps?.location ?? ev.location ?? "";
+      const loc = String(locRaw).toLowerCase();
 
-    const catRaw = ev.extendedProps?.categoria ?? ev.categoria ?? "Otros";
-    const cat = String(catRaw).toLowerCase();
+      const catRaw = ev.extendedProps?.categoria ?? ev.categoria ?? "Otros";
+      const cat = String(catRaw).toLowerCase();
 
-    // ✅ Buscar por: titulo, ubicacion y categoria
-    return !q || title.includes(q) || loc.includes(q) || cat.includes(q);
-  });
+      const clienteRaw = ev.extendedProps?.cliente ?? ev.cliente ?? "";
+      const cliente = String(clienteRaw).toLowerCase();
 
-  if (!filtered.length) {
-    renderDayTasksEmpty(
-      q ? "No hay coincidencias con tu búsqueda." : "No hay tareas para este día."
-    );
-    return;
-  }
+      return (
+        !q ||
+        title.includes(q) ||
+        loc.includes(q) ||
+        cat.includes(q) ||
+        cliente.includes(q)
+      );
+    });
 
-  dayTasksList.innerHTML = filtered
-    .map((ev) => {
-      const id = escapeHtml(ev.id);
+    if (!filtered.length) {
+      renderDayTasksEmpty(
+        q
+          ? "No hay coincidencias con tu búsqueda."
+          : "No hay tareas para este día.",
+      );
+      return;
+    }
 
-      const title = escapeHtml(ev.title || "Sin título");
+    dayTasksList.innerHTML = filtered
+      .map((ev) => {
+        const id = escapeHtml(ev.id);
 
-      const start = ev.start instanceof Date ? fmtTime(ev.start) : "—";
-      const end = ev.end instanceof Date ? fmtTime(ev.end) : "";
-      const range = end ? `${start} - ${end}` : start;
+        const title = escapeHtml(ev.title || "Sin título");
 
-      const locationRaw = ev.extendedProps?.location ?? ev.location ?? "";
-      const location = locationRaw ? escapeHtml(locationRaw) : "";
+        const start = ev.start instanceof Date ? fmtTime(ev.start) : "—";
+        const end = ev.end instanceof Date ? fmtTime(ev.end) : "";
+        const range = end ? `${start} - ${end}` : start;
 
-      const estadoRaw = ev.extendedProps?.estado ?? ev.estado ?? "";
-      const estado = estadoRaw ? escapeHtml(estadoRaw) : "";
+        const locationRaw = ev.extendedProps?.location ?? ev.location ?? "";
+        const location = locationRaw ? escapeHtml(locationRaw) : "";
 
-      const tipo = ev.extendedProps?.tipo || ev.tipo || "evento";
-      const icon = tipo === "vacaciones" ? "bi bi-airplane-fill" : "bi bi-check2-square";
+        const estadoRaw = ev.extendedProps?.estado ?? ev.estado ?? "";
+        const estado = estadoRaw ? escapeHtml(estadoRaw) : "";
 
-      // ✅ categoria
-      const categoriaRaw = ev.extendedProps?.categoria ?? ev.categoria ?? "Otros";
-      const categoria = escapeHtml(categoriaRaw || "Otros");
+        const tipo = ev.extendedProps?.tipo || ev.tipo || "evento";
 
-      const catStyle = CATEGORY_STYLES[categoriaRaw]?.chip || CATEGORY_STYLES["Otros"].chip;
-      const cardStyle = CATEGORY_STYLES[categoriaRaw]?.card || CATEGORY_STYLES["Otros"].card;
+        const clienteRaw = ev.extendedProps?.cliente ?? ev.cliente ?? "";
+        const cliente =
+          clienteRaw !== null && clienteRaw !== ""
+            ? escapeHtml(clienteRaw)
+            : "";
+        const icon =
+          tipo === "vacaciones" ? "bi bi-airplane-fill" : "bi bi-check2-square";
 
-      // chip estado
-      let estadoClass = "bg-gray-700 text-gray-200";
-      if (estadoRaw === "creado")
-        estadoClass = "bg-green-600/20 text-green-300 ring-1 ring-green-600/30";
-      if (estadoRaw === "proceso")
-        estadoClass = "bg-yellow-600/20 text-yellow-300 ring-1 ring-yellow-600/30";
-      if (estadoRaw === "terminado")
-        estadoClass = "bg-red-600/20 text-red-300 ring-1 ring-red-600/30";
-      if (estadoRaw === "cancelado")
-        estadoClass = "bg-gray-600/30 text-gray-200 ring-1 ring-gray-600/30";
+        // ✅ categoria
+        const categoriaRaw =
+          ev.extendedProps?.categoria ?? ev.categoria ?? "Otros";
+        const categoria = escapeHtml(categoriaRaw || "Otros");
 
-      return `
+        const catStyle =
+          CATEGORY_STYLES[categoriaRaw]?.chip || CATEGORY_STYLES["Otros"].chip;
+        const cardStyle =
+          CATEGORY_STYLES[categoriaRaw]?.card || CATEGORY_STYLES["Otros"].card;
+
+        // chip estado
+        let estadoClass = "bg-gray-700 text-gray-200";
+        if (estadoRaw === "creado")
+          estadoClass =
+            "bg-green-600/20 text-green-300 ring-1 ring-green-600/30";
+        if (estadoRaw === "proceso")
+          estadoClass =
+            "bg-yellow-600/20 text-yellow-300 ring-1 ring-yellow-600/30";
+        if (estadoRaw === "terminado")
+          estadoClass = "bg-red-600/20 text-red-300 ring-1 ring-red-600/30";
+        if (estadoRaw === "cancelado")
+          estadoClass = "bg-gray-600/30 text-gray-200 ring-1 ring-gray-600/30";
+
+        return `
         <button
           class="w-full text-left border rounded-xl p-4 transition ${cardStyle}"
           data-event-id="${id}">
@@ -688,6 +1025,12 @@ function renderDayTasksList(events) {
                       ? `<div class="text-sm text-gray-200 mt-1"><i class="bi bi-geo-alt"></i> ${location}</div>`
                       : ""
                   }
+
+${
+  cliente
+    ? `<div class="text-sm text-slate-300 mt-1"><i class="bi bi-person-vcard"></i> Cliente: ${cliente}</div>`
+    : ""
+}
                 </div>
 
                 <div class="flex items-center gap-2 shrink-0">
@@ -705,32 +1048,30 @@ function renderDayTasksList(events) {
           </div>
         </button>
       `;
-    })
-    .join("");
+      })
+      .join("");
 
-  // Click en item => abre tu modal existente
-  dayTasksList.querySelectorAll("button[data-event-id]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-event-id");
-      const cal = window.calendar;
+    // Click en item => abre tu modal existente
+    dayTasksList.querySelectorAll("button[data-event-id]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-event-id");
+        const cal = window.calendar;
 
-      const ev = cal && typeof cal.getEvents === "function"
-        ? cal.getEvents().find((e) => String(e.id) === String(id))
-        : null;
+        const ev =
+          cal && typeof cal.getEvents === "function"
+            ? cal.getEvents().find((e) => String(e.id) === String(id))
+            : null;
 
-      if (!ev) return;
+        if (!ev) return;
 
-      modalEvent = ev;
-      closeDayTasksModal();
+        modalEvent = ev;
+        closeDayTasksModal();
 
-      if (ev.extendedProps?.tipo === "vacaciones") showVacationModal(ev);
-      else showEventModal(ev);
+        if (ev.extendedProps?.tipo === "vacaciones") showVacationModal(ev);
+        else showEventModal(ev);
+      });
     });
-  });
-}
-
-
-
+  }
 
   async function refreshDayTasks() {
     if (!dayTasksDate || !dayTasksList) return;

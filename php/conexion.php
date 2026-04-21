@@ -1,9 +1,9 @@
 <?php
     //$servername = 'b88e0bd2df17.sn.mynetname.net:3306';
-    $servername = '192.168.99.253:3306';
-    $database = 'sysbbs';
-    //$database = 'sysbbs_parquer';
-    $username = 'adminbbs';
+    $servername = '192.168.80.253:3306';
+    //$database = 'sysbbs';
+    $database = 'sysbbs_parquer';
+    $username = 'root';
     $password = 'Admin_Pinck';
     // Create connection
     $conexion = mysqli_connect($servername, $username, $password, $database);
