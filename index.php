@@ -419,13 +419,8 @@ if (!isset($_SESSION['username'])) {
             <h2 id="eventAdress" class="text-sm font-bold text-cyan-300 mt-3"></h2>
           </div>
 
-          <div class="map-shell relative">
-            <div id="map" class="w-full h-64"></div>
-
-            <button type="button" id="openMapModal"
-              class="absolute top-3 right-3 z-[500] px-4 py-2 rounded-xl bg-cyan-500 text-white font-bold shadow-lg hover:bg-cyan-400 transition">
-              <i class="bi bi-arrows-fullscreen"></i> Ampliar
-            </button>
+          <div class="map-shell">
+            <div id="eventMap" class="w-full h-72"></div>
           </div>
 
           <div class="flex flex-col gap-4">
