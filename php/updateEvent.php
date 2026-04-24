@@ -30,6 +30,8 @@ $lat        = post('lat', '0');
 $lng        = post('lng', '0');
 $evidencia  = post('evidencia', '');
 $comentarios= post('comentarios', '');
+$clienteRaw  = post('cliente', '');
+$cliente     = $clienteRaw !== '' ? (int)$clienteRaw : null;
 
 // Normalizar END: si viene vacío -> sentinel
 if ($end === '') $end = '2000-01-01T01:01';
@@ -49,11 +51,12 @@ $stmt = $conexion->prepare("
     end = ?,
     location = ?,
     estado = ?,
-    categoria = ?,       -- ✅ NUEVO
+    categoria = ?,
     lat = ?,
     lng = ?,
     evidencia = ?,
-    comentarios = ?
+    comentarios = ?,
+    cliente = ?
   WHERE id = ?
 ");
 
@@ -65,7 +68,7 @@ if (!$stmt) {
 
 // Ojo: lat/lng en tu tabla son DECIMAL, los mandamos como string está OK
 $stmt->bind_param(
-  "ssssssssssi",
+  "ssssssssssii",
   $title,
   $start,
   $end,
@@ -76,6 +79,7 @@ $stmt->bind_param(
   $lng,
   $evidencia,
   $comentarios,
+  $cliente,
   $id
 );
 

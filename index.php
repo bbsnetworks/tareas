@@ -223,6 +223,9 @@ if (!isset($_SESSION['username'])) {
     .scroll-dark::-webkit-scrollbar-track {
       background: transparent;
     }
+    .fc .fc-list-sticky .fc-list-day > * {
+    background: inherit !important;
+}
   </style>
 </head>
 
@@ -282,27 +285,21 @@ if (!isset($_SESSION['username'])) {
             </div>
 
             <div class="relative">
-  <label for="clienteSearch" class="block text-sm font-semibold text-slate-200 mb-2">
-    Cliente
-  </label>
+              <label for="clienteSearch" class="block text-sm font-semibold text-slate-200 mb-2">
+                Cliente
+              </label>
 
-  <input
-    type="text"
-    id="clienteSearch"
-    class="input-dark"
-    placeholder="Buscar por nombre o número de cliente"
-    autocomplete="off"
-  >
+              <input type="text" id="clienteSearch" class="input-dark"
+                placeholder="Buscar por nombre o número de cliente" autocomplete="off">
 
-  <!-- Aquí se guarda SOLO el número de cliente -->
-  <input type="hidden" id="cliente" name="cliente">
+              <!-- Aquí se guarda SOLO el número de cliente -->
+              <input type="hidden" id="cliente" name="cliente">
 
-  <!-- Lista de resultados -->
-  <div
-    id="clienteResults"
-    class="hidden absolute z-50 mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 shadow-2xl max-h-64 overflow-y-auto"
-  ></div>
-</div>
+              <!-- Lista de resultados -->
+              <div id="clienteResults"
+                class="hidden absolute z-50 mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 shadow-2xl max-h-64 overflow-y-auto">
+              </div>
+            </div>
 
             <div>
               <label for="categoria" class="block text-sm font-semibold text-slate-200 mb-2">Categoría</label>
@@ -311,6 +308,7 @@ if (!isset($_SESSION['username'])) {
                 <option value="Cobertura">Cobertura</option>
                 <option value="Instalación">Instalación</option>
                 <option value="Reporte">Reporte</option>
+                <option value="Sin Servicio">Sin Servicio</option>
                 <option value="Cambio de domicilio">Cambio de domicilio</option>
                 <option value="Cancelación">Cancelación</option>
                 <option value="Servicios">Servicios</option>
@@ -326,8 +324,13 @@ if (!isset($_SESSION['username'])) {
                 readonly>
             </div>
 
-            <div class="map-shell">
+            <div class="map-shell relative">
               <div id="map" class="w-full h-64"></div>
+
+              <button type="button" id="openMapModal"
+                class="absolute top-3 right-3 z-[500] px-4 py-2 rounded-xl bg-cyan-500 text-white font-bold shadow-lg hover:bg-cyan-400 transition">
+                <i class="bi bi-arrows-fullscreen"></i> Ampliar
+              </button>
             </div>
 
             <input type="hidden" id="lat">
@@ -350,15 +353,49 @@ if (!isset($_SESSION['username'])) {
 
         <!-- Panel derecho -->
         <section class="space-y-6">
-          <div id="calendar" class="mt-0"></div>
+          <div id="calendar" class="mt-0 min-h-[700px] md:min-h-[800px]"></div>
         </section>
       </div>
     </div>
   </main>
+  <div id="mapModal" class="hidden fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm">
+    <div class="w-full h-full flex flex-col">
 
+      <div class="flex items-center justify-between gap-4 p-4 bg-slate-950 border-b border-cyan-500/20">
+        <div id="mapSelectedAddress"
+          class="px-4 pb-3 text-sm text-cyan-300 bg-slate-950 border-b border-cyan-500/10 truncate">
+          Selecciona una ubicación...
+        </div>
+        <div>
+          <h2 class="text-xl font-extrabold text-white">
+            Seleccionar ubicación
+          </h2>
+          <p class="text-sm text-slate-300">
+            Mueve el pin o da clic en el mapa para elegir la dirección.
+          </p>
+        </div>
+
+        <button type="button" id="closeMapModal"
+          class="w-11 h-11 rounded-xl bg-slate-800 text-white hover:bg-slate-700">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div id="mapModalContainer" class="w-full flex-1"></div>
+
+      <div class="p-4 bg-slate-950 border-t border-cyan-500/20">
+        <button type="button" id="confirmMapLocation"
+          class="btn-base btn-primary w-full flex items-center justify-center gap-2">
+          <i class="bi bi-check2-circle"></i>
+          Usar esta ubicación
+        </button>
+      </div>
+
+    </div>
+  </div>
   <!-- Modal evento -->
   <div id="eventModal" class="hidden fixed inset-0 z-50 flex justify-center items-center px-4 py-4">
-  <div id="eventModalOverlay" class="absolute inset-0 bg-black/75 backdrop-blur-[2px]"></div>
+    <div id="eventModalOverlay" class="absolute inset-0 bg-black/75 backdrop-blur-[2px]"></div>
     <div class="modal-panel w-full max-w-2xl max-h-[92vh] relative overflow-hidden flex flex-col z-10">
       <div id="eventDetails"
         class="transition-transform duration-500 transform translate-x-0 overflow-y-auto scroll-dark p-6">
@@ -382,8 +419,13 @@ if (!isset($_SESSION['username'])) {
             <h2 id="eventAdress" class="text-sm font-bold text-cyan-300 mt-3"></h2>
           </div>
 
-          <div class="map-shell">
-            <div id="eventMap" class="w-full h-72"></div>
+          <div class="map-shell relative">
+            <div id="map" class="w-full h-64"></div>
+
+            <button type="button" id="openMapModal"
+              class="absolute top-3 right-3 z-[500] px-4 py-2 rounded-xl bg-cyan-500 text-white font-bold shadow-lg hover:bg-cyan-400 transition">
+              <i class="bi bi-arrows-fullscreen"></i> Ampliar
+            </button>
           </div>
 
           <div class="flex flex-col gap-4">

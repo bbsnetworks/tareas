@@ -16,6 +16,7 @@ $categoriasPermitidas = [
     "Cobertura",
     "Instalación",
     "Reporte",
+    "Sin Servicio",
     "Cambio de domicilio",
     "Cancelación",
     "Servicios",

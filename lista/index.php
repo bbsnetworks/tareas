@@ -90,6 +90,34 @@ if (!isset($_SESSION['username'])) {
           <input type="datetime-local" id="editEnd" name="end"
             class="w-full bg-[#4c566a] text-white border border-gray-600 rounded p-2">
         </div>
+        <div class="mb-3 relative">
+  <label for="editClienteSearch" class="block text-gray-300 font-bold">
+    Cliente
+  </label>
+
+  <input
+    type="text"
+    id="editClienteSearch"
+    class="w-full bg-[#4c566a] text-white border border-gray-600 rounded p-2"
+    placeholder="Buscar por nombre o número de cliente"
+    autocomplete="off"
+  >
+
+  <input type="hidden" id="editCliente" name="cliente">
+
+  <div
+    id="editClienteResults"
+    class="hidden absolute z-50 mt-2 w-full rounded-xl border border-gray-700 bg-[#2e3440] shadow-2xl max-h-64 overflow-y-auto"
+  ></div>
+
+  <button
+    type="button"
+    id="clearEditCliente"
+    class="mt-2 text-sm text-red-300 hover:text-red-200"
+  >
+    Quitar cliente
+  </button>
+</div>
         <div class="mb-3">
           <label for="editLocation" class="block text-gray-300 font-bold">Ubicación</label>
           <input type="text" id="editLocation" name="location"
@@ -102,6 +130,7 @@ if (!isset($_SESSION['username'])) {
             <option value="Cobertura">Cobertura</option>
             <option value="Instalación">Instalación</option>
             <option value="Reporte">Reporte</option>
+            <option value="Sin Servicio">Sin Servicio</option>
             <option value="Cambio de domicilio">Cambio de domicilio</option>
             <option value="Cancelación">Cancelación</option>
             <option value="Servicios">Servicios</option>

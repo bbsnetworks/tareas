@@ -12,6 +12,10 @@ const CATEGORY_STYLES = {
     chip: "bg-orange-500/20 text-orange-300 ring-1 ring-orange-500/30",
     card: "bg-orange-500/10 border-orange-500/30 hover:bg-orange-500/15",
   },
+  "Sin Servicio": {
+    chip: "bg-red-500/20 text-red-300 ring-1 ring-red-500/30",
+    card: "bg-red-500/10 border-red-500/30 hover:bg-red-500/15",
+  },
   "Cambio de domicilio": {
     chip: "bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30",
     card: "bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/15",
@@ -201,6 +205,84 @@ document.addEventListener("DOMContentLoaded", function () {
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; OpenStreetMap contributors",
   }).addTo(formMap);
+
+  // ===============================
+// MAPA GRANDE (MODAL)
+// ===============================
+let mapModalInstance = null;
+let mapModalMarker = null;
+
+const mapModal = document.getElementById("mapModal");
+const openMapModal = document.getElementById("openMapModal");
+const closeMapModal = document.getElementById("closeMapModal");
+const confirmMapLocation = document.getElementById("confirmMapLocation");
+
+function abrirMapaGrande() {
+  const currentLatLng = formMarker.getLatLng();
+  // Mostrar dirección actual al abrir
+const currentAddress = document.getElementById("here-autocomplete").value;
+const modalAddress = document.getElementById("mapSelectedAddress");
+
+if (modalAddress) {
+  modalAddress.textContent = currentAddress || "Selecciona una ubicación...";
+}
+
+  mapModal.classList.remove("hidden");
+
+  setTimeout(() => {
+    if (!mapModalInstance) {
+      mapModalInstance = L.map("mapModalContainer").setView(
+        [currentLatLng.lat, currentLatLng.lng],
+        formMap.getZoom()
+      );
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(mapModalInstance);
+
+      mapModalMarker = L.marker([currentLatLng.lat, currentLatLng.lng], {
+        draggable: true,
+      }).addTo(mapModalInstance);
+
+      mapModalMarker.on("moveend", function (e) {
+        const { lat, lng } = e.target.getLatLng();
+
+        formMarker.setLatLng([lat, lng]);
+        formMap.setView([lat, lng], mapModalInstance.getZoom());
+
+        updateLocation(lat, lng);
+      });
+
+      mapModalInstance.on("click", function (e) {
+        const { lat, lng } = e.latlng;
+
+        mapModalMarker.setLatLng([lat, lng]);
+        formMarker.setLatLng([lat, lng]);
+        formMap.setView([lat, lng], mapModalInstance.getZoom());
+
+        updateLocation(lat, lng);
+      });
+    } else {
+      mapModalInstance.setView(
+        [currentLatLng.lat, currentLatLng.lng],
+        formMap.getZoom()
+      );
+      mapModalMarker.setLatLng([currentLatLng.lat, currentLatLng.lng]);
+    }
+
+    mapModalInstance.invalidateSize();
+  }, 150);
+}
+
+function cerrarMapaGrande() {
+  mapModal.classList.add("hidden");
+  formMap.invalidateSize();
+}
+
+// Eventos
+openMapModal.addEventListener("click", abrirMapaGrande);
+closeMapModal.addEventListener("click", cerrarMapaGrande);
+confirmMapLocation.addEventListener("click", cerrarMapaGrande);
 
   const formMarker = L.marker([20.12933, -101.17979], {
     draggable: true,
@@ -404,21 +486,36 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   });
   // Actualizar ubicación en el formulario
-  async function updateLocation(lat, lng) {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
-    const response = await fetch(url);
-    const data = await response.json();
-    const address = data.display_name || "Ubicación desconocida";
-    document.getElementById("here-autocomplete").value = address;
-    document.getElementById("lat").value = lat;
-    document.getElementById("lng").value = lng;
+ async function updateLocation(lat, lng) {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+  const response = await fetch(url);
+  const data = await response.json();
+
+  const address = data.display_name || "Ubicación desconocida";
+
+  // Inputs del formulario
+  document.getElementById("here-autocomplete").value = address;
+  document.getElementById("lat").value = lat;
+  document.getElementById("lng").value = lng;
+
+  // 👇 NUEVO: texto en el modal
+  const modalAddress = document.getElementById("mapSelectedAddress");
+  if (modalAddress) {
+    modalAddress.textContent = address;
   }
+}
 
   formMarker.on("moveend", function (e) {
-    const { lat, lng } = e.target.getLatLng();
-    updateLocation(lat, lng);
-    formMap.invalidateSize(); // Asegurar el renderizado al mover el marcador
-  });
+  const { lat, lng } = e.target.getLatLng();
+
+  updateLocation(lat, lng);
+
+  if (mapModalMarker) {
+    mapModalMarker.setLatLng([lat, lng]);
+  }
+
+  formMap.invalidateSize();
+});
 
   // Mapa en el modal
   let eventMap; // Mapa del modal
