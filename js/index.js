@@ -50,52 +50,79 @@ document.addEventListener("DOMContentLoaded", function () {
   const backButton = document.getElementById("backButton");
 
   const calendarEl = document.getElementById("calendar");
-  const initialView = window.innerWidth < 768 ? "listWeek" : "dayGridMonth";
-  const calendar = new FullCalendar.Calendar(calendarEl, {
-    locale: "es",
-    initialView: initialView,
-    headerToolbar: {
-      left: "prev,next today",
-      center: "title",
-      right: "dayGridMonth,timeGridWeek,timeGridDay",
+const initialView = window.innerWidth < 768 ? "listWeek" : "dayGridMonth";
+
+// ✅ FullCalendar maneja "end" como fecha exclusiva.
+// Para vacaciones necesitamos pintar también el último día seleccionado.
+function addOneDayToDateOnly(dateStr) {
+  if (!dateStr) return dateStr;
+
+  // Acepta "2026-06-02" o "2026-06-02 00:00:00"
+  const cleanDate = String(dateStr).split(" ")[0].split("T")[0];
+
+  const [year, month, day] = cleanDate.split("-").map(Number);
+
+  if (!year || !month || !day) return dateStr;
+
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + 1);
+
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}`;
+}
+const calendar = new FullCalendar.Calendar(calendarEl, {
+  locale: "es",
+  initialView: initialView,
+
+  eventDataTransform: function (eventData) {
+    const tipo =
+      eventData.tipo ||
+      eventData.extendedProps?.tipo ||
+      "";
+
+    if (tipo === "vacaciones" && eventData.end) {
+      const fechaFinReal = eventData.end;
+
+      eventData.extendedProps = {
+        ...(eventData.extendedProps || {}),
+        fechaFinReal: fechaFinReal,
+      };
+
+      eventData.end = addOneDayToDateOnly(eventData.end);
+      eventData.allDay = true;
+    }
+
+    return eventData;
+  },
+
+  events: {
+    url: "../tareas/php/eventos.php",
+    method: "GET",
+    failure: function () {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudieron cargar los eventos.",
+      });
     },
-    events: {
-      url: "../tareas/php/eventos.php",
-      method: "GET",
-      failure: function (error) {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "No se pudieron cargar los eventos.",
-        });
-        console.error("Error al cargar eventos:", error);
-      },
-    },
-    editable: true,
-    selectable: true,
-    eventClick: function (info) {
-      modalEvent = info.event;
-      if (modalEvent.extendedProps.tipo === "vacaciones") {
-        showVacationModal(modalEvent);
-      } else {
-        showEventModal(modalEvent);
-      }
-    },
-    windowResize: function () {
-      if (window.innerWidth < 768) {
-        calendar.changeView("listWeek");
-      } else {
-        calendar.changeView("dayGridMonth");
-      }
-    },
-    eventDidMount: function (info) {
-      // Aplicar opacidad a eventos para que los colores se vean más tenues
-      info.el.style.opacity = "0.75";
-      info.el.style.filter = "saturate(70%)";
-    },
-  });
-  window.calendar = calendar;
-  calendar.render();
+  },
+
+  eventClick: function (info) {
+    modalEvent = info.event;
+
+    if (info.event.extendedProps?.tipo === "vacaciones") {
+      showVacationModal(info.event);
+    } else {
+      showEventModal(info.event);
+    }
+  },
+});
+
+window.calendar = calendar;
+calendar.render();
 
   // Mostrar slider al hacer clic en el botón "Completado"
   window.showSlider = function showSlider() {
@@ -109,14 +136,22 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 10); // Permitir que la transición ocurra
   };
   function showVacationModal(event) {
-    document.getElementById("vacationTitle").innerHTML =
-      `<i class="bi bi-calendar"></i> ${event.title}`;
-    document.getElementById("vacationDate").innerHTML =
-      `<i class="bi bi-clock"></i> Desde: ${event.start.toLocaleString()} 
-            <br> <i class="bi bi-clock-fill"></i> Hasta: ${event.end ? event.end.toLocaleString() : "No especificado"}`;
+  const fechaFinReal = event.extendedProps?.fechaFinReal || event.end;
 
-    document.getElementById("vacationModal").classList.remove("hidden");
-  }
+  document.getElementById("vacationTitle").innerHTML =
+    `<i class="bi bi-calendar"></i> ${event.title}`;
+
+  document.getElementById("vacationDate").innerHTML =
+    `<i class="bi bi-clock"></i> Desde: ${event.start.toLocaleDateString("es-MX")} 
+     <br> 
+     <i class="bi bi-clock-fill"></i> Hasta: ${
+       fechaFinReal
+         ? new Date(String(fechaFinReal).split(" ")[0] + "T00:00:00").toLocaleDateString("es-MX")
+         : "No especificado"
+     }`;
+
+  document.getElementById("vacationModal").classList.remove("hidden");
+}
 
   document
     .getElementById("closeVacationModal")
