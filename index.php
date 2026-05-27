@@ -223,9 +223,10 @@ if (!isset($_SESSION['username'])) {
     .scroll-dark::-webkit-scrollbar-track {
       background: transparent;
     }
-    .fc .fc-list-sticky .fc-list-day > * {
-    background: inherit !important;
-}
+
+    .fc .fc-list-sticky .fc-list-day>* {
+      background: inherit !important;
+    }
   </style>
 </head>
 
@@ -319,9 +320,25 @@ if (!isset($_SESSION['username'])) {
             </div>
 
             <div>
-              <label for="here-autocomplete" class="block text-sm font-semibold text-slate-200 mb-2">Ubicación</label>
+              <div class="flex items-center justify-between gap-3 mb-2">
+                <label for="here-autocomplete" class="block text-sm font-semibold text-slate-200">
+                  Ubicación
+                </label>
+
+                <button type="button" id="btnLimpiarUbicacion"
+                  class="hidden px-3 py-2 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition text-xs font-bold flex items-center gap-2">
+                  <i class="bi bi-eraser"></i>
+                  Limpiar ubicación
+                </button>
+              </div>
+
               <input type="text" id="here-autocomplete" class="input-dark" placeholder="Selecciona una ubicación"
                 readonly>
+
+              <p id="ubicacionHelp" class="hidden mt-2 text-xs text-cyan-300 font-semibold">
+                <i class="bi bi-info-circle"></i>
+                Ubicación cargada desde el contrato del cliente.
+              </p>
             </div>
 
             <div class="map-shell relative">
@@ -342,8 +359,8 @@ if (!isset($_SESSION['username'])) {
                 Agregar evento
               </button>
 
-              <button type="button" class="btn-base btn-secondary w-full flex items-center justify-center gap-2"
-                onclick="document.getElementById('eventForm').reset()">
+              <button type="button" id="btnLimpiarFormulario"
+                class="btn-base btn-secondary w-full flex items-center justify-center gap-2">
                 <i class="bi bi-arrow-counterclockwise"></i>
                 Limpiar
               </button>

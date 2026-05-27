@@ -50,79 +50,76 @@ document.addEventListener("DOMContentLoaded", function () {
   const backButton = document.getElementById("backButton");
 
   const calendarEl = document.getElementById("calendar");
-const initialView = window.innerWidth < 768 ? "listWeek" : "dayGridMonth";
+  const initialView = window.innerWidth < 768 ? "listWeek" : "dayGridMonth";
 
-// ✅ FullCalendar maneja "end" como fecha exclusiva.
-// Para vacaciones necesitamos pintar también el último día seleccionado.
-function addOneDayToDateOnly(dateStr) {
-  if (!dateStr) return dateStr;
+  // ✅ FullCalendar maneja "end" como fecha exclusiva.
+  // Para vacaciones necesitamos pintar también el último día seleccionado.
+  function addOneDayToDateOnly(dateStr) {
+    if (!dateStr) return dateStr;
 
-  // Acepta "2026-06-02" o "2026-06-02 00:00:00"
-  const cleanDate = String(dateStr).split(" ")[0].split("T")[0];
+    // Acepta "2026-06-02" o "2026-06-02 00:00:00"
+    const cleanDate = String(dateStr).split(" ")[0].split("T")[0];
 
-  const [year, month, day] = cleanDate.split("-").map(Number);
+    const [year, month, day] = cleanDate.split("-").map(Number);
 
-  if (!year || !month || !day) return dateStr;
+    if (!year || !month || !day) return dateStr;
 
-  const date = new Date(year, month - 1, day);
-  date.setDate(date.getDate() + 1);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() + 1);
 
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
 
-  return `${yyyy}-${mm}-${dd}`;
-}
-const calendar = new FullCalendar.Calendar(calendarEl, {
-  locale: "es",
-  initialView: initialView,
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    locale: "es",
+    initialView: initialView,
 
-  eventDataTransform: function (eventData) {
-    const tipo =
-      eventData.tipo ||
-      eventData.extendedProps?.tipo ||
-      "";
+    eventDataTransform: function (eventData) {
+      const tipo = eventData.tipo || eventData.extendedProps?.tipo || "";
 
-    if (tipo === "vacaciones" && eventData.end) {
-      const fechaFinReal = eventData.end;
+      if (tipo === "vacaciones" && eventData.end) {
+        const fechaFinReal = eventData.end;
 
-      eventData.extendedProps = {
-        ...(eventData.extendedProps || {}),
-        fechaFinReal: fechaFinReal,
-      };
+        eventData.extendedProps = {
+          ...(eventData.extendedProps || {}),
+          fechaFinReal: fechaFinReal,
+        };
 
-      eventData.end = addOneDayToDateOnly(eventData.end);
-      eventData.allDay = true;
-    }
+        eventData.end = addOneDayToDateOnly(eventData.end);
+        eventData.allDay = true;
+      }
 
-    return eventData;
-  },
-
-  events: {
-    url: "../tareas/php/eventos.php",
-    method: "GET",
-    failure: function () {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se pudieron cargar los eventos.",
-      });
+      return eventData;
     },
-  },
 
-  eventClick: function (info) {
-    modalEvent = info.event;
+    events: {
+      url: "../tareas/php/eventos.php",
+      method: "GET",
+      failure: function () {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudieron cargar los eventos.",
+        });
+      },
+    },
 
-    if (info.event.extendedProps?.tipo === "vacaciones") {
-      showVacationModal(info.event);
-    } else {
-      showEventModal(info.event);
-    }
-  },
-});
+    eventClick: function (info) {
+      modalEvent = info.event;
 
-window.calendar = calendar;
-calendar.render();
+      if (info.event.extendedProps?.tipo === "vacaciones") {
+        showVacationModal(info.event);
+      } else {
+        showEventModal(info.event);
+      }
+    },
+  });
+
+  window.calendar = calendar;
+  calendar.render();
 
   // Mostrar slider al hacer clic en el botón "Completado"
   window.showSlider = function showSlider() {
@@ -136,22 +133,24 @@ calendar.render();
     }, 10); // Permitir que la transición ocurra
   };
   function showVacationModal(event) {
-  const fechaFinReal = event.extendedProps?.fechaFinReal || event.end;
+    const fechaFinReal = event.extendedProps?.fechaFinReal || event.end;
 
-  document.getElementById("vacationTitle").innerHTML =
-    `<i class="bi bi-calendar"></i> ${event.title}`;
+    document.getElementById("vacationTitle").innerHTML =
+      `<i class="bi bi-calendar"></i> ${event.title}`;
 
-  document.getElementById("vacationDate").innerHTML =
-    `<i class="bi bi-clock"></i> Desde: ${event.start.toLocaleDateString("es-MX")} 
+    document.getElementById("vacationDate").innerHTML =
+      `<i class="bi bi-clock"></i> Desde: ${event.start.toLocaleDateString("es-MX")} 
      <br> 
      <i class="bi bi-clock-fill"></i> Hasta: ${
        fechaFinReal
-         ? new Date(String(fechaFinReal).split(" ")[0] + "T00:00:00").toLocaleDateString("es-MX")
+         ? new Date(
+             String(fechaFinReal).split(" ")[0] + "T00:00:00",
+           ).toLocaleDateString("es-MX")
          : "No especificado"
      }`;
 
-  document.getElementById("vacationModal").classList.remove("hidden");
-}
+    document.getElementById("vacationModal").classList.remove("hidden");
+  }
 
   document
     .getElementById("closeVacationModal")
@@ -242,82 +241,83 @@ calendar.render();
   }).addTo(formMap);
 
   // ===============================
-// MAPA GRANDE (MODAL)
-// ===============================
-let mapModalInstance = null;
-let mapModalMarker = null;
+  // MAPA GRANDE (MODAL)
+  // ===============================
+  let mapModalInstance = null;
+  let mapModalMarker = null;
 
-const mapModal = document.getElementById("mapModal");
-const openMapModal = document.getElementById("openMapModal");
-const closeMapModal = document.getElementById("closeMapModal");
-const confirmMapLocation = document.getElementById("confirmMapLocation");
+  const mapModal = document.getElementById("mapModal");
+  const openMapModal = document.getElementById("openMapModal");
+  const closeMapModal = document.getElementById("closeMapModal");
+  const confirmMapLocation = document.getElementById("confirmMapLocation");
 
-function abrirMapaGrande() {
-  const currentLatLng = formMarker.getLatLng();
-  // Mostrar dirección actual al abrir
-const currentAddress = document.getElementById("here-autocomplete").value;
-const modalAddress = document.getElementById("mapSelectedAddress");
+  function abrirMapaGrande() {
+    const currentLatLng = formMarker.getLatLng();
+    // Mostrar dirección actual al abrir
+    const currentAddress = document.getElementById("here-autocomplete").value;
+    const modalAddress = document.getElementById("mapSelectedAddress");
 
-if (modalAddress) {
-  modalAddress.textContent = currentAddress || "Selecciona una ubicación...";
-}
-
-  mapModal.classList.remove("hidden");
-
-  setTimeout(() => {
-    if (!mapModalInstance) {
-      mapModalInstance = L.map("mapModalContainer").setView(
-        [currentLatLng.lat, currentLatLng.lng],
-        formMap.getZoom()
-      );
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap contributors",
-      }).addTo(mapModalInstance);
-
-      mapModalMarker = L.marker([currentLatLng.lat, currentLatLng.lng], {
-        draggable: true,
-      }).addTo(mapModalInstance);
-
-      mapModalMarker.on("moveend", function (e) {
-        const { lat, lng } = e.target.getLatLng();
-
-        formMarker.setLatLng([lat, lng]);
-        formMap.setView([lat, lng], mapModalInstance.getZoom());
-
-        updateLocation(lat, lng);
-      });
-
-      mapModalInstance.on("click", function (e) {
-        const { lat, lng } = e.latlng;
-
-        mapModalMarker.setLatLng([lat, lng]);
-        formMarker.setLatLng([lat, lng]);
-        formMap.setView([lat, lng], mapModalInstance.getZoom());
-
-        updateLocation(lat, lng);
-      });
-    } else {
-      mapModalInstance.setView(
-        [currentLatLng.lat, currentLatLng.lng],
-        formMap.getZoom()
-      );
-      mapModalMarker.setLatLng([currentLatLng.lat, currentLatLng.lng]);
+    if (modalAddress) {
+      modalAddress.textContent =
+        currentAddress || "Selecciona una ubicación...";
     }
 
-    mapModalInstance.invalidateSize();
-  }, 150);
-}
+    mapModal.classList.remove("hidden");
 
-function cerrarMapaGrande() {
-  mapModal.classList.add("hidden");
-  formMap.invalidateSize();
-}
+    setTimeout(() => {
+      if (!mapModalInstance) {
+        mapModalInstance = L.map("mapModalContainer").setView(
+          [currentLatLng.lat, currentLatLng.lng],
+          formMap.getZoom(),
+        );
 
-// Eventos
-openMapModal.addEventListener("click", abrirMapaGrande);
-closeMapModal.addEventListener("click", cerrarMapaGrande);
-confirmMapLocation.addEventListener("click", cerrarMapaGrande);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "&copy; OpenStreetMap contributors",
+        }).addTo(mapModalInstance);
+
+        mapModalMarker = L.marker([currentLatLng.lat, currentLatLng.lng], {
+          draggable: true,
+        }).addTo(mapModalInstance);
+
+        mapModalMarker.on("moveend", function (e) {
+          const { lat, lng } = e.target.getLatLng();
+
+          formMarker.setLatLng([lat, lng]);
+          formMap.setView([lat, lng], mapModalInstance.getZoom());
+
+          updateLocation(lat, lng);
+        });
+
+        mapModalInstance.on("click", function (e) {
+          const { lat, lng } = e.latlng;
+
+          mapModalMarker.setLatLng([lat, lng]);
+          formMarker.setLatLng([lat, lng]);
+          formMap.setView([lat, lng], mapModalInstance.getZoom());
+
+          updateLocation(lat, lng);
+        });
+      } else {
+        mapModalInstance.setView(
+          [currentLatLng.lat, currentLatLng.lng],
+          formMap.getZoom(),
+        );
+        mapModalMarker.setLatLng([currentLatLng.lat, currentLatLng.lng]);
+      }
+
+      mapModalInstance.invalidateSize();
+    }, 150);
+  }
+
+  function cerrarMapaGrande() {
+    mapModal.classList.add("hidden");
+    formMap.invalidateSize();
+  }
+
+  // Eventos
+  openMapModal.addEventListener("click", abrirMapaGrande);
+  closeMapModal.addEventListener("click", cerrarMapaGrande);
+  confirmMapLocation.addEventListener("click", cerrarMapaGrande);
 
   const formMarker = L.marker([20.12933, -101.17979], {
     draggable: true,
@@ -327,6 +327,12 @@ confirmMapLocation.addEventListener("click", cerrarMapaGrande);
   const clienteSearch = document.getElementById("clienteSearch");
   const clienteInput = document.getElementById("cliente");
   const clienteResults = document.getElementById("clienteResults");
+  const btnLimpiarUbicacion = document.getElementById("btnLimpiarUbicacion");
+  const ubicacionHelp = document.getElementById("ubicacionHelp");
+  const btnLimpiarFormulario = document.getElementById("btnLimpiarFormulario");
+
+  const DEFAULT_LAT = 20.12933;
+  const DEFAULT_LNG = -101.17979;
 
   let clienteTimer = null;
 
@@ -335,7 +341,108 @@ confirmMapLocation.addEventListener("click", cerrarMapaGrande);
     clienteResults.classList.add("hidden");
     clienteResults.innerHTML = "";
   }
+  function mostrarControlesUbicacion(mostrar = false, desdeContrato = false) {
+    if (btnLimpiarUbicacion) {
+      btnLimpiarUbicacion.classList.toggle("hidden", !mostrar);
+    }
 
+    if (ubicacionHelp) {
+      ubicacionHelp.classList.toggle("hidden", !desdeContrato);
+    }
+  }
+
+  function limpiarUbicacionTarea() {
+    const inputUbicacion = document.getElementById("here-autocomplete");
+    const inputLat = document.getElementById("lat");
+    const inputLng = document.getElementById("lng");
+    const modalAddress = document.getElementById("mapSelectedAddress");
+
+    if (inputUbicacion) inputUbicacion.value = "";
+    if (inputLat) inputLat.value = "";
+    if (inputLng) inputLng.value = "";
+    if (modalAddress) modalAddress.textContent = "Selecciona una ubicación...";
+
+    formMarker.setLatLng([DEFAULT_LAT, DEFAULT_LNG]);
+    formMap.setView([DEFAULT_LAT, DEFAULT_LNG], 13);
+
+    if (mapModalMarker) {
+      mapModalMarker.setLatLng([DEFAULT_LAT, DEFAULT_LNG]);
+    }
+
+    mostrarControlesUbicacion(false, false);
+    formMap.invalidateSize();
+  }
+
+  function setUbicacionTarea(
+    lat,
+    lng,
+    texto = "Ubicación seleccionada",
+    desdeContrato = false,
+  ) {
+    const inputUbicacion = document.getElementById("here-autocomplete");
+    const inputLat = document.getElementById("lat");
+    const inputLng = document.getElementById("lng");
+    const modalAddress = document.getElementById("mapSelectedAddress");
+
+    if (!lat || !lng) return;
+
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+
+    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) return;
+
+    if (inputUbicacion) inputUbicacion.value = texto;
+    if (inputLat) inputLat.value = latNum;
+    if (inputLng) inputLng.value = lngNum;
+    if (modalAddress) modalAddress.textContent = texto;
+
+    formMarker.setLatLng([latNum, lngNum]);
+    formMap.setView([latNum, lngNum], 16);
+
+    if (mapModalMarker) {
+      mapModalMarker.setLatLng([latNum, lngNum]);
+    }
+
+    mostrarControlesUbicacion(true, desdeContrato);
+    formMap.invalidateSize();
+  }
+
+  function cargarUbicacionDesdeCliente(cliente) {
+    if (!cliente) return;
+
+    const lat = cliente.ubicacion_lat;
+    const lng = cliente.ubicacion_lng;
+
+    if (lat && lng) {
+      const textoUbicacion =
+        cliente.ubicacion_texto ||
+        `Ubicación del contrato de ${cliente.nombre || "cliente"}`;
+
+      setUbicacionTarea(lat, lng, textoUbicacion, true);
+    } else {
+      mostrarControlesUbicacion(false, false);
+
+      Swal.fire({
+        icon: "info",
+        title: "Cliente sin ubicación",
+        text: "Este cliente no tiene una ubicación guardada en su contrato.",
+        timer: 2500,
+        showConfirmButton: false,
+      });
+    }
+  }
+
+  function limpiarClienteSeleccionado() {
+    if (clienteInput) clienteInput.value = "";
+    if (clienteSearch) clienteSearch.value = "";
+    hideClienteResults();
+  }
+
+  function limpiarFormularioTarea() {
+    form.reset();
+    limpiarClienteSeleccionado();
+    limpiarUbicacionTarea();
+  }
   function renderClienteResults(clientes) {
     if (!clienteResults) return;
 
@@ -353,13 +460,26 @@ confirmMapLocation.addEventListener("click", cerrarMapaGrande);
       .map(
         (cliente) => `
         <button
-          type="button"
-          class="w-full text-left px-4 py-3 border-b border-slate-800 last:border-b-0 hover:bg-slate-800 transition"
-          data-id="${cliente.idcliente}"
-          data-nombre="${escapeHtml(cliente.nombre)}"
-        >
-          <div class="text-white font-semibold">${cliente.idcliente} - ${escapeHtml(cliente.nombre)}</div>
-        </button>
+  type="button"
+  class="w-full text-left px-4 py-3 border-b border-slate-800 last:border-b-0 hover:bg-slate-800 transition"
+  data-id="${cliente.idcliente}"
+  data-nombre="${escapeHtml(cliente.nombre)}"
+  data-lat="${cliente.ubicacion_lat || ""}"
+  data-lng="${cliente.ubicacion_lng || ""}"
+  data-ubicacion="${escapeHtml(cliente.ubicacion_texto || "")}"
+>
+  <div class="text-white font-semibold">${cliente.idcliente} - ${escapeHtml(cliente.nombre)}</div>
+
+  ${
+    cliente.ubicacion_lat && cliente.ubicacion_lng
+      ? `<div class="text-xs text-cyan-300 mt-1">
+          <i class="bi bi-geo-alt-fill"></i> Tiene ubicación guardada
+        </div>`
+      : `<div class="text-xs text-slate-500 mt-1">
+          <i class="bi bi-geo-alt"></i> Sin ubicación guardada
+        </div>`
+  }
+</button>
       `,
       )
       .join("");
@@ -370,10 +490,22 @@ confirmMapLocation.addEventListener("click", cerrarMapaGrande);
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-id");
         const nombre = btn.getAttribute("data-nombre");
+        const lat = btn.getAttribute("data-lat");
+        const lng = btn.getAttribute("data-lng");
+        const ubicacionTexto = btn.getAttribute("data-ubicacion");
 
-        clienteInput.value = id; // Solo se guarda el ID
-        clienteSearch.value = `${id} - ${nombre}`; // Visible al usuario
+        clienteInput.value = id;
+        clienteSearch.value = `${id} - ${nombre}`;
+
         hideClienteResults();
+
+        cargarUbicacionDesdeCliente({
+          idcliente: id,
+          nombre,
+          ubicacion_lat: lat,
+          ubicacion_lng: lng,
+          ubicacion_texto: ubicacionTexto,
+        });
       });
     });
   }
@@ -406,8 +538,15 @@ confirmMapLocation.addEventListener("click", cerrarMapaGrande);
     clienteSearch.addEventListener("input", () => {
       const q = clienteSearch.value.trim();
 
-      // Si vuelve a escribir, se limpia el valor real
+      // Si vuelve a escribir, se limpia el cliente real
       clienteInput.value = "";
+
+      // Si borra el cliente, también se borra la ubicación
+      if (q === "") {
+        limpiarUbicacionTarea();
+        hideClienteResults();
+        return;
+      }
 
       clearTimeout(clienteTimer);
 
@@ -434,7 +573,17 @@ confirmMapLocation.addEventListener("click", cerrarMapaGrande);
       }
     });
   }
+  if (btnLimpiarUbicacion) {
+    btnLimpiarUbicacion.addEventListener("click", () => {
+      limpiarUbicacionTarea();
+    });
+  }
 
+  if (btnLimpiarFormulario) {
+    btnLimpiarFormulario.addEventListener("click", () => {
+      limpiarFormularioTarea();
+    });
+  }
   form.addEventListener("submit", function (event) {
     event.preventDefault();
 
@@ -496,15 +645,7 @@ confirmMapLocation.addEventListener("click", cerrarMapaGrande);
           throw new Error(body.error || "Error desconocido");
         }
         calendar.refetchEvents();
-        form.reset();
-        document.getElementById("here-autocomplete").value = "";
-        document.getElementById("lat").value = "";
-        document.getElementById("lng").value = "";
-        document.getElementById("cliente").value = "";
-        if (document.getElementById("clienteSearch")) {
-          document.getElementById("clienteSearch").value = "";
-        }
-        hideClienteResults();
+        limpiarFormularioTarea();
         Swal.fire({
           icon: "success",
           title: "Evento agregado",
@@ -521,36 +662,47 @@ confirmMapLocation.addEventListener("click", cerrarMapaGrande);
       });
   });
   // Actualizar ubicación en el formulario
- async function updateLocation(lat, lng) {
-  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
-  const response = await fetch(url);
-  const data = await response.json();
+  async function updateLocation(lat, lng) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+      const response = await fetch(url);
+      const data = await response.json();
 
-  const address = data.display_name || "Ubicación desconocida";
+      const address = data.display_name || "Ubicación desconocida";
 
-  // Inputs del formulario
-  document.getElementById("here-autocomplete").value = address;
-  document.getElementById("lat").value = lat;
-  document.getElementById("lng").value = lng;
+      document.getElementById("here-autocomplete").value = address;
+      document.getElementById("lat").value = lat;
+      document.getElementById("lng").value = lng;
 
-  // 👇 NUEVO: texto en el modal
-  const modalAddress = document.getElementById("mapSelectedAddress");
-  if (modalAddress) {
-    modalAddress.textContent = address;
+      const modalAddress = document.getElementById("mapSelectedAddress");
+      if (modalAddress) {
+        modalAddress.textContent = address;
+      }
+
+      mostrarControlesUbicacion(true, false);
+    } catch (error) {
+      console.error("Error obteniendo dirección:", error);
+
+      document.getElementById("here-autocomplete").value =
+        "Ubicación seleccionada";
+      document.getElementById("lat").value = lat;
+      document.getElementById("lng").value = lng;
+
+      mostrarControlesUbicacion(true, false);
+    }
   }
-}
 
   formMarker.on("moveend", function (e) {
-  const { lat, lng } = e.target.getLatLng();
+    const { lat, lng } = e.target.getLatLng();
 
-  updateLocation(lat, lng);
+    updateLocation(lat, lng);
 
-  if (mapModalMarker) {
-    mapModalMarker.setLatLng([lat, lng]);
-  }
+    if (mapModalMarker) {
+      mapModalMarker.setLatLng([lat, lng]);
+    }
 
-  formMap.invalidateSize();
-});
+    formMap.invalidateSize();
+  });
 
   // Mapa en el modal
   let eventMap; // Mapa del modal
