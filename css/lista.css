@@ -8,9 +8,7 @@
     text-overflow: ellipsis; /* Muestra puntos suspensivos */
     text-align: center;
 }
-tr{
-  background-color: #2E3440 !important;
-}
+
 .dt-length>select{
   color : #2E3440 !important;
 }
