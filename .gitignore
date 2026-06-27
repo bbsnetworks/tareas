@@ -1,2 +1,3 @@
-php/conexion.php
 evidencia/*
+php/conexion.php
+php/conexion.local.php
