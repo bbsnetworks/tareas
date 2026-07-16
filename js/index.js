@@ -735,7 +735,24 @@ document.addEventListener("DOMContentLoaded", function () {
       clienteNombreRaw !== null && clienteNombreRaw !== ""
         ? escapeHtml(clienteNombreRaw)
         : null;
+    const clienteDireccionRaw =
+      event.extendedProps?.cliente_direccion ?? event.cliente_direccion ?? "";
 
+    const clienteDireccion = clienteDireccionRaw
+      ? escapeHtml(clienteDireccionRaw)
+      : null;
+
+    const clienteTelefonoRaw =
+      event.extendedProps?.cliente_telefono ?? event.cliente_telefono ?? "";
+
+    const clienteTelefono = clienteTelefonoRaw
+      ? escapeHtml(clienteTelefonoRaw)
+      : null;
+
+    // Versión segura para usar en el enlace tel:
+    const clienteTelefonoEnlace = clienteTelefonoRaw
+      ? String(clienteTelefonoRaw).replace(/[^0-9+]/g, "")
+      : "";
     const ubicacionRaw = event.extendedProps?.location ?? event.location ?? "";
     const ubicacion = ubicacionRaw
       ? escapeHtml(ubicacionRaw)
@@ -786,20 +803,81 @@ document.addEventListener("DOMContentLoaded", function () {
       ${
         cliente
           ? `
-      <div class="rounded-xl border border-cyan-500/10 bg-slate-900/60 p-3">
-        <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">Cliente</div>
-        <div class="text-sm font-semibold text-white">
-          <i class="bi bi-person-vcard mr-1 text-cyan-300"></i>${cliente}
+  <div class="rounded-xl border border-cyan-500/10 bg-slate-900/60 p-4">
+    <div class="text-xs uppercase tracking-wide text-slate-400 mb-3">
+      Datos del cliente
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <div>
+        <div class="text-xs text-slate-400 mb-1">
+          Número de cliente
         </div>
-        ${
-          clienteNombre
-            ? `<div class="text-sm text-slate-300 mt-1">
-                 <i class="bi bi-person mr-1 text-cyan-300"></i>${clienteNombre}
-               </div>`
-            : ""
-        }
+
+        <div class="text-sm font-semibold text-white">
+          <i class="bi bi-person-vcard mr-1 text-cyan-300"></i>
+          ${cliente}
+        </div>
       </div>
-    `
+
+      ${
+        clienteNombre
+          ? `
+        <div>
+          <div class="text-xs text-slate-400 mb-1">
+            Nombre
+          </div>
+
+          <div class="text-sm font-semibold text-white">
+            <i class="bi bi-person mr-1 text-cyan-300"></i>
+            ${clienteNombre}
+          </div>
+        </div>
+      `
+          : ""
+      }
+
+      ${
+        clienteTelefono
+          ? `
+        <div>
+          <div class="text-xs text-slate-400 mb-1">
+            Teléfono
+          </div>
+
+          <a
+            href="tel:${clienteTelefonoEnlace}"
+            class="text-sm font-semibold text-cyan-300 hover:text-cyan-200 transition"
+          >
+            <i class="bi bi-telephone-fill mr-1"></i>
+            ${clienteTelefono}
+          </a>
+        </div>
+      `
+          : ""
+      }
+
+      ${
+        clienteDireccion
+          ? `
+        <div class="md:col-span-2">
+          <div class="text-xs text-slate-400 mb-1">
+            Dirección del cliente
+          </div>
+
+          <div class="text-sm font-semibold text-slate-200 break-words">
+            <i class="bi bi-house-door-fill mr-1 text-cyan-300"></i>
+            ${clienteDireccion}
+          </div>
+        </div>
+      `
+          : ""
+      }
+
+    </div>
+  </div>
+`
           : ""
       }
     </div>

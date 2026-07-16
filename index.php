@@ -529,11 +529,11 @@ if (!isset($_SESSION['username'])) {
   </button>
 
   <!-- Modal tareas del día -->
-  <div id="dayTasksModal" class="hidden fixed inset-0 z-50">
+  <div id="dayTasksModal" class="hidden fixed inset-0 z-50 overflow-y-auto overscroll-contain p-3 sm:p-4">
     <div class="absolute inset-0 bg-black/75 backdrop-blur-[2px]"></div>
 
-    <div class="relative mx-auto mt-20 w-[95%] max-w-4xl">
-      <div class="modal-panel overflow-hidden">
+    <div class="relative mx-auto my-auto min-h-full w-full max-w-4xl flex items-start md:items-center">
+      <div class="modal-panel w-full max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain scroll-dark">
         <div class="flex items-center justify-between gap-4 p-5 border-b border-cyan-500/10">
           <div>
             <p class="text-cyan-300 font-semibold tracking-[0.16em] uppercase text-xs">Consulta rápida</p>
@@ -566,7 +566,7 @@ if (!isset($_SESSION['username'])) {
             </div>
           </div>
 
-          <div id="dayTasksList" class="max-h-[60vh] overflow-auto pr-1 space-y-3 scroll-dark">
+          <div id="dayTasksList" class="space-y-3 md:max-h-[60vh] md:overflow-y-auto md:pr-1 scroll-dark">
             <!-- aquí se inyecta la lista -->
           </div>
         </div>

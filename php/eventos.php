@@ -33,12 +33,14 @@ try {
 
             // Obtener eventos
             $result = $conexion->query("
-            SELECT 
-            e.*,
-            c.nombre AS cliente_nombre
-            FROM eventos e
-            LEFT JOIN clientes c ON e.cliente = c.idcliente
-            ");
+    SELECT 
+        e.*,
+        c.nombre AS cliente_nombre,
+        c.direccion AS cliente_direccion,
+        c.telefono AS cliente_telefono
+    FROM eventos e
+    LEFT JOIN clientes c ON e.cliente = c.idcliente
+");
             if (!$result) {
                 throw new Exception("Error al obtener los eventos: " . $conexion->error);
             }
@@ -63,14 +65,27 @@ try {
                         break; // Gris
                 }
                 if (!isset($row['cliente']) || $row['cliente'] === '') {
-                $row['cliente'] = null;
+                    $row['cliente'] = null;
                 } else {
-                $row['cliente'] = (int)$row['cliente'];
+                    $row['cliente'] = (int) $row['cliente'];
                 }
 
                 if (!isset($row['cliente_nombre']) || $row['cliente_nombre'] === '') {
-                $row['cliente_nombre'] = null;
-}
+                    $row['cliente_nombre'] = null;
+                }
+                if (
+                    !isset($row['cliente_direccion']) ||
+                    trim((string) $row['cliente_direccion']) === ''
+                ) {
+                    $row['cliente_direccion'] = null;
+                }
+
+                if (
+                    !isset($row['cliente_telefono']) ||
+                    trim((string) $row['cliente_telefono']) === ''
+                ) {
+                    $row['cliente_telefono'] = null;
+                }
                 // Asegurar categoría en registros viejos
                 if (!isset($row['categoria']) || $row['categoria'] === null || $row['categoria'] === '') {
                     $row['categoria'] = 'Otros';
@@ -80,7 +95,7 @@ try {
                 if (!isset($row['cliente']) || $row['cliente'] === '') {
                     $row['cliente'] = null;
                 } else {
-                    $row['cliente'] = (int)$row['cliente'];
+                    $row['cliente'] = (int) $row['cliente'];
                 }
 
                 $row['tipo'] = 'evento';
@@ -145,7 +160,7 @@ try {
 
             // Nuevo campo cliente (INT NULL)
             $cliente = (isset($data['cliente']) && $data['cliente'] !== '' && $data['cliente'] !== null)
-                ? (int)$data['cliente']
+                ? (int) $data['cliente']
                 : null;
 
             $endValue = $end ? "'$end'" : "NULL";
@@ -175,7 +190,7 @@ try {
                 exit;
             }
 
-            $id = (int)$_GET['id'];
+            $id = (int) $_GET['id'];
             $sql = "DELETE FROM eventos WHERE id = $id";
 
             if (!$conexion->query($sql)) {
@@ -195,7 +210,7 @@ try {
                 exit;
             }
 
-            $id = (int)$data['id'];
+            $id = (int) $data['id'];
             $title = $conexion->real_escape_string($data['title']);
             $start = $conexion->real_escape_string($data['start']);
             $end = isset($data['end']) && $data['end'] !== '' ? $conexion->real_escape_string($data['end']) : null;
@@ -211,7 +226,7 @@ try {
 
             // Nuevo campo cliente (INT NULL)
             $cliente = (isset($data['cliente']) && $data['cliente'] !== '' && $data['cliente'] !== null)
-                ? (int)$data['cliente']
+                ? (int) $data['cliente']
                 : null;
 
             // Categoría opcional en update
