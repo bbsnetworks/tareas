@@ -37,7 +37,8 @@ try {
         e.*,
         c.nombre AS cliente_nombre,
         c.direccion AS cliente_direccion,
-        c.telefono AS cliente_telefono
+        c.telefono AS cliente_telefono,
+        c.ip AS cliente_ip
     FROM eventos e
     LEFT JOIN clientes c ON e.cliente = c.idcliente
 ");

@@ -749,10 +749,18 @@ document.addEventListener("DOMContentLoaded", function () {
       ? escapeHtml(clienteTelefonoRaw)
       : null;
 
+    const clienteIpRaw =
+    event.extendedProps?.cliente_ip ?? event.cliente_ip ?? "";
+
+    const clienteIp = clienteIpRaw
+      ? escapeHtml(clienteIpRaw)
+      : null;
+
     // Versión segura para usar en el enlace tel:
     const clienteTelefonoEnlace = clienteTelefonoRaw
       ? String(clienteTelefonoRaw).replace(/[^0-9+]/g, "")
-      : "";
+      : ""; 
+
     const ubicacionRaw = event.extendedProps?.location ?? event.location ?? "";
     const ubicacion = ubicacionRaw
       ? escapeHtml(ubicacionRaw)
@@ -857,7 +865,22 @@ document.addEventListener("DOMContentLoaded", function () {
       `
           : ""
       }
+      ${
+  clienteIp
+    ? `
+  <div>
+    <div class="text-xs text-slate-400 mb-1">
+      Dirección IP
+    </div>
 
+    <div class="text-sm font-semibold text-white">
+      <i class="bi bi-router mr-1 text-cyan-300"></i>
+      ${clienteIp}
+    </div>
+  </div>
+`
+    : ""
+}
       ${
         clienteDireccion
           ? `
